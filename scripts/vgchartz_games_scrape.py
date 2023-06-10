@@ -29,18 +29,15 @@ def validate_command_line_arguments():
     options, values = getopt.getopt(args, '', long_options)
 
     debug = False
-    platform = None
     page_limit = None
 
     for option, value in options:
-        print(f'Option: {option}, Value: {value}')
-        if option == '--platform': platform = value
         if option == '--page_limit': page_limit = value
         if option == '--debug': debug = True
 
     if debug == True: print('> Debug mode enabled')
 
-    return debug, platform, page_limit
+    return debug, page_limit
 
 def retrieve_game_search_data_table(page_url, page_number):
     ''' Retrieves the page data from the page url. '''
@@ -91,7 +88,6 @@ def write_game_data_to_csv(game_data, file_exists):
     if file_exists:
         df = pd.read_csv(CSV_FILE_PATH)
         combined_df = pd.concat([df, pd.DataFrame(game_data)])
-        # df = pd.concat(game_data)
         combined_df.to_csv(CSV_FILE_PATH, index=False)
     else:
         df = pd.DataFrame(game_data)
@@ -124,8 +120,10 @@ def check_previous_scraped_data():
     return file_exists, page_counter
 
 if __name__ == '__main__':
+    skip_file_writing = False
+
     # TODO: Add command line argument validation
-    debug, platform, page_limit = validate_command_line_arguments()
+    debug, page_limit = validate_command_line_arguments()
 
     n_pages_to_scrape = DEFAULT_TOTAL_PAGES
     if page_limit != None:
@@ -144,6 +142,8 @@ if __name__ == '__main__':
             break
 
         if page_counter > DEFAULT_TOTAL_PAGES:
+            if debug == True: print(f'> All pages have already been scraped...')
+            skip_file_writing = True
             break
 
         page_counter += 1
@@ -157,7 +157,8 @@ if __name__ == '__main__':
         if debug == True: print(f'> Appending the game list data...')
         vgchartz_games_array.extend(page_game_data)
 
-    if debug == True: print(f'> Writing scraped game data to \'..\\data\\vgchartz_games_webscrape.csv\'...')
-    write_game_data_to_csv(vgchartz_games_array, file_exists)
+    if skip_file_writing == False:
+        if debug == True: print(f'> Writing scraped game data to \'..\\data\\vgchartz_games_webscrape.csv\'...')
+        write_game_data_to_csv(vgchartz_games_array, file_exists)
 
     if debug == True: print(f'> Webscraping complete!')
